@@ -130,102 +130,108 @@ canvas{
 
 <script>
 /* ===== 台北時間倒數 ===== */
-const cd=document.getElementById("countdown");
+const cd = document.getElementById("countdown");
 function updateCountdown(){
-  const now=new Date(new Date().toLocaleString("en-US",{timeZone:"Asia/Taipei"}));
-  const target=new Date("2026-01-01T00:00:00+08:00");
-  let diff=target-now;
-  if(diff<0) diff=0;
+  const now = new Date(
+    new Date().toLocaleString("en-US",{timeZone:"Asia/Taipei"})
+  );
+  const target = new Date("2026-01-01T00:00:00+08:00");
+  let diff = target - now;
+  if(diff < 0) diff = 0;
 
-  const d=Math.floor(diff/86400000);
-  const h=Math.floor(diff%86400000/3600000);
-  const m=Math.floor(diff%3600000/60000);
-  const s=Math.floor(diff%60000/1000);
+  const d = Math.floor(diff / 86400000);
+  const h = Math.floor(diff % 86400000 / 3600000);
+  const m = Math.floor(diff % 3600000 / 60000);
+  const s = Math.floor(diff % 60000 / 1000);
 
-  cd.textContent=`${d} 天 ${h} 小時 ${m} 分 ${s} 秒`;
+  cd.textContent = `${d} 天 ${h} 小時 ${m} 分 ${s} 秒`;
 }
 setInterval(updateCountdown,1000);
 updateCountdown();
 
 /* ===== Canvas 粒子 ===== */
-const canvas=document.getElementById("canvas");
-const ctx=canvas.getContext("2d");
-let particles=[];
-let targetCount=180;
-let speed=1;
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+let particles = [];
+let targetCount = 180;
+let speed = 1;
 
 function resize(){
-  const dpr=window.devicePixelRatio||1;
-  canvas.width=innerWidth*dpr;
-  canvas.height=innerHeight*dpr;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = innerWidth * dpr;
+  canvas.height = innerHeight * dpr;
   ctx.setTransform(dpr,0,0,dpr,0,0);
 }
-window.addEventListener("resize",resize);
+window.addEventListener("resize", resize);
 resize();
 
+/* ⭐ 關鍵：初始化就在畫面內 */
 function createParticle(){
   return{
-    x:Math.random()*innerWidth,
-    y:innerHeight+Math.random()*innerHeight,
-    r:Math.random()*2+1,
-    v:Math.random()*0.6+0.4
+    x: Math.random() * innerWidth,
+    y: Math.random() * innerHeight, // ← 這一行是重點
+    r: Math.random() * 2 + 1,
+    v: Math.random() * 0.6 + 0.4
   };
 }
 
 function syncParticles(){
-  while(particles.length<targetCount) particles.push(createParticle());
-  while(particles.length>targetCount) particles.pop();
+  while(particles.length < targetCount) particles.push(createParticle());
+  while(particles.length > targetCount) particles.pop();
 }
 syncParticles();
 
+/* 動畫主循環：一進頁面就跑 */
 function animate(){
   ctx.clearRect(0,0,innerWidth,innerHeight);
 
-  const color=getComputedStyle(document.documentElement)
+  const color = getComputedStyle(document.documentElement)
     .getPropertyValue("--glow-color");
-  ctx.fillStyle=color;
-  ctx.shadowColor=color;
-  ctx.shadowBlur=18;
+  ctx.fillStyle = color;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 18;
 
   for(const p of particles){
-    p.y-=p.v*speed;
-    if(p.y<-10){
-      p.y=innerHeight+10;
-      p.x=Math.random()*innerWidth;
+    p.y -= p.v * speed;
+    if(p.y < -10){
+      p.y = innerHeight + 10;
+      p.x = Math.random() * innerWidth;
     }
     ctx.beginPath();
     ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
     ctx.fill();
   }
+
   requestAnimationFrame(animate);
 }
-animate(); // ⭐ 一進頁面就跑
+animate();
 
 /* ===== 控制（即時，不重跑） ===== */
-bgColor.oninput=e=>{
-  document.documentElement.style.setProperty("--bg-color",e.target.value);
+bgColor.oninput = e=>{
+  document.documentElement.style.setProperty("--bg-color", e.target.value);
 };
-pColor.oninput=e=>{
-  document.documentElement.style.setProperty("--glow-color",e.target.value);
+pColor.oninput = e=>{
+  document.documentElement.style.setProperty("--glow-color", e.target.value);
 };
-pCount.oninput=e=>{
-  targetCount=+e.target.value;
-  syncParticles(); // 只增減
+pCount.oninput = e=>{
+  targetCount = +e.target.value;
+  syncParticles();
 };
-pSpeed.oninput=e=>{
-  speed=+e.target.value; // 即時生效
+pSpeed.oninput = e=>{
+  speed = +e.target.value;
 };
 
 /* ===== 光暈（滑鼠＋觸控） ===== */
-const glow=document.getElementById("glow");
+const glow = document.getElementById("glow");
 function move(e){
-  const x=e.touches?e.touches[0].clientX:e.clientX;
-  const y=e.touches?e.touches[0].clientY:e.clientY;
-  glow.style.left=x+"px";
-  glow.style.top=y+"px";
+  const x = e.touches ? e.touches[0].clientX : e.clientX;
+  const y = e.touches ? e.touches[0].clientY : e.clientY;
+  glow.style.left = x + "px";
+  glow.style.top = y + "px";
 }
-window.addEventListener("mousemove",move);
-window.addEventListener("touchmove",move,{passive:true});
+window.addEventListener("mousemove", move);
+window.addEventListener("touchmove", move, {passive:true});
 </script>
 
 </body>
