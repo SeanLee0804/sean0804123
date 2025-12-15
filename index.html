@@ -8,11 +8,10 @@
 <style>
 :root{
   --bg-color:#05070c;
-  --particle-color:#4cc9ff;
-  --text-glow:#4cc9ff;
+  --glow-color:#4cc9ff;
 }
 
-*{box-sizing:border-box;margin:0;padding:0}
+*{margin:0;padding:0;box-sizing:border-box}
 html,body{
   width:100%;
   height:100%;
@@ -41,8 +40,8 @@ canvas{
 }
 
 .subtitle{
-  opacity:.7;
-  letter-spacing:.3em;
+  opacity:.65;
+  letter-spacing:.35em;
   margin-bottom:1rem;
 }
 
@@ -51,8 +50,8 @@ canvas{
   font-weight:700;
   letter-spacing:.15em;
   text-shadow:
-    0 0 15px var(--text-glow),
-    0 0 30px var(--text-glow);
+    0 0 18px var(--glow-color),
+    0 0 36px var(--glow-color);
 }
 
 .tz{
@@ -61,12 +60,13 @@ canvas{
   font-size:.9rem;
 }
 
+/* 光暈 */
 .glow{
   position:fixed;
-  width:min(140px,35vw);
-  height:min(140px,35vw);
-  background:radial-gradient(circle, var(--particle-color), transparent 70%);
-  filter:blur(35px);
+  width:min(150px,40vw);
+  height:min(150px,40vw);
+  background:radial-gradient(circle, var(--glow-color), transparent 70%);
+  filter:blur(40px);
   pointer-events:none;
   transform:translate(-50%,-50%);
   z-index:1;
@@ -90,12 +90,11 @@ canvas{
 .controls label{
   display:flex;
   justify-content:space-between;
+  align-items:center;
   gap:6px;
 }
 
-.controls input[type="range"]{
-  width:110px;
-}
+.controls input[type="range"]{width:120px}
 
 @media(max-width:600px){
   .controls{scale:.9}
@@ -104,13 +103,13 @@ canvas{
 </head>
 
 <body>
-<canvas id="bg"></canvas>
 
+<canvas id="canvas"></canvas>
 <div class="glow" id="glow"></div>
 
 <div class="container">
   <div class="subtitle">距離跨年還有</div>
-  <div class="countdown" id="time">計算中…</div>
+  <div class="countdown" id="countdown">計算中…</div>
   <div class="tz">Asia / Taipei</div>
 </div>
 
@@ -130,8 +129,8 @@ canvas{
 </div>
 
 <script>
-/* ===== 倒數（台北時間） ===== */
-const timeEl=document.getElementById("time");
+/* ===== 台北時間倒數 ===== */
+const cd=document.getElementById("countdown");
 function updateCountdown(){
   const now=new Date(new Date().toLocaleString("en-US",{timeZone:"Asia/Taipei"}));
   const target=new Date("2026-01-01T00:00:00+08:00");
@@ -143,16 +142,16 @@ function updateCountdown(){
   const m=Math.floor(diff%3600000/60000);
   const s=Math.floor(diff%60000/1000);
 
-  timeEl.textContent=`${d} 天 ${h} 小時 ${m} 分 ${s} 秒`;
+  cd.textContent=`${d} 天 ${h} 小時 ${m} 分 ${s} 秒`;
 }
 setInterval(updateCountdown,1000);
 updateCountdown();
 
-/* ===== 粒子 ===== */
-const canvas=document.getElementById("bg");
+/* ===== Canvas 粒子 ===== */
+const canvas=document.getElementById("canvas");
 const ctx=canvas.getContext("2d");
 let particles=[];
-let particleCount=180;
+let targetCount=180;
 let speed=1;
 
 function resize(){
@@ -164,60 +163,57 @@ function resize(){
 window.addEventListener("resize",resize);
 resize();
 
-function createParticles(){
-  particles=[];
-  for(let i=0;i<particleCount;i++){
-    particles.push({
-      x:Math.random()*innerWidth,
-      y:innerHeight+Math.random()*innerHeight,
-      r:Math.random()*2+1,
-      v:Math.random()*speed+speed
-    });
-  }
+function createParticle(){
+  return{
+    x:Math.random()*innerWidth,
+    y:innerHeight+Math.random()*innerHeight,
+    r:Math.random()*2+1,
+    v:Math.random()*0.6+0.4
+  };
 }
-createParticles();
 
-function draw(){
+function syncParticles(){
+  while(particles.length<targetCount) particles.push(createParticle());
+  while(particles.length>targetCount) particles.pop();
+}
+syncParticles();
+
+function animate(){
   ctx.clearRect(0,0,innerWidth,innerHeight);
-  ctx.fillStyle=getComputedStyle(document.documentElement)
-    .getPropertyValue("--particle-color");
-  ctx.shadowColor=ctx.fillStyle;
-  ctx.shadowBlur=15;
+
+  const color=getComputedStyle(document.documentElement)
+    .getPropertyValue("--glow-color");
+  ctx.fillStyle=color;
+  ctx.shadowColor=color;
+  ctx.shadowBlur=18;
 
   for(const p of particles){
-    p.y-=p.v;
-    if(p.y<0){
-      p.y=innerHeight;
+    p.y-=p.v*speed;
+    if(p.y<-10){
+      p.y=innerHeight+10;
       p.x=Math.random()*innerWidth;
     }
     ctx.beginPath();
     ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
     ctx.fill();
   }
-  requestAnimationFrame(draw);
+  requestAnimationFrame(animate);
 }
-draw();
+animate(); // ⭐ 一進頁面就跑
 
-/* ===== 控制 ===== */
-const bgInput=document.getElementById("bgColor");
-const pInput=document.getElementById("pColor");
-const countInput=document.getElementById("pCount");
-const speedInput=document.getElementById("pSpeed");
-
-bgInput.oninput=e=>{
+/* ===== 控制（即時，不重跑） ===== */
+bgColor.oninput=e=>{
   document.documentElement.style.setProperty("--bg-color",e.target.value);
 };
-pInput.oninput=e=>{
-  document.documentElement.style.setProperty("--particle-color",e.target.value);
-  document.documentElement.style.setProperty("--text-glow",e.target.value);
+pColor.oninput=e=>{
+  document.documentElement.style.setProperty("--glow-color",e.target.value);
 };
-countInput.oninput=e=>{
-  particleCount=+e.target.value;
-  createParticles();
+pCount.oninput=e=>{
+  targetCount=+e.target.value;
+  syncParticles(); // 只增減
 };
-speedInput.oninput=e=>{
-  speed=+e.target.value;
-  createParticles();
+pSpeed.oninput=e=>{
+  speed=+e.target.value; // 即時生效
 };
 
 /* ===== 光暈（滑鼠＋觸控） ===== */
@@ -231,5 +227,6 @@ function move(e){
 window.addEventListener("mousemove",move);
 window.addEventListener("touchmove",move,{passive:true});
 </script>
+
 </body>
 </html>
