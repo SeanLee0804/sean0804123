@@ -12,6 +12,7 @@
 }
 
 *{margin:0;padding:0;box-sizing:border-box}
+
 html,body{
   width:100%;
   height:100%;
@@ -21,12 +22,14 @@ html,body{
   color:#fff;
 }
 
+/* ===== Canvas ===== */
 canvas{
   position:fixed;
   inset:0;
   z-index:0;
 }
 
+/* ===== 主內容 ===== */
 .container{
   position:relative;
   z-index:2;
@@ -40,46 +43,52 @@ canvas{
 }
 
 .subtitle{
-  opacity:.65;
-  letter-spacing:.35em;
-  margin-bottom:1rem;
+  opacity:.6;
+  letter-spacing:.4em;
+  margin-bottom:1.2rem;
+  font-size:clamp(.8rem,2vw,1rem);
 }
 
 .countdown{
-  font-size:clamp(2rem,6vw,4.5rem);
-  font-weight:700;
-  letter-spacing:.15em;
+  font-size:clamp(2.6rem,7.5vw,6.8rem);
+  font-weight:800;
+  letter-spacing:.18em;
   text-shadow:
-    0 0 18px var(--glow-color),
-    0 0 36px var(--glow-color);
+    0 0 22px var(--glow-color),
+    0 0 45px var(--glow-color),
+    0 0 90px rgba(76,201,255,.35);
+}
+
+@media (min-width:1024px){
+  .countdown{font-size:7.5rem;}
 }
 
 .tz{
-  margin-top:1rem;
+  margin-top:1.2rem;
   opacity:.6;
   font-size:.9rem;
 }
 
-/* 光暈 */
+/* ===== 光暈 ===== */
 .glow{
   position:fixed;
-  width:min(150px,40vw);
-  height:min(150px,40vw);
+  width:min(180px,45vw);
+  height:min(180px,45vw);
   background:radial-gradient(circle, var(--glow-color), transparent 70%);
-  filter:blur(40px);
+  filter:blur(45px);
   pointer-events:none;
   transform:translate(-50%,-50%);
   z-index:1;
 }
 
-/* 控制面板 */
+/* ===== 控制面板 ===== */
 .controls{
   position:fixed;
   bottom:1rem;
   right:1rem;
   z-index:3;
   background:rgba(0,0,0,.55);
-  backdrop-filter:blur(10px);
+  backdrop-filter:blur(12px);
   border-radius:14px;
   padding:12px;
   display:grid;
@@ -121,7 +130,7 @@ canvas{
     <input type="color" id="pColor" value="#4cc9ff">
   </label>
   <label>數量
-    <input type="range" id="pCount" min="50" max="400" value="180">
+    <input type="range" id="pCount" min="50" max="500" value="220">
   </label>
   <label>速度
     <input type="range" id="pSpeed" min="0.3" max="3" step="0.1" value="1">
@@ -130,108 +139,100 @@ canvas{
 
 <script>
 /* ===== 台北時間倒數 ===== */
-const cd = document.getElementById("countdown");
+const cd=document.getElementById("countdown");
 function updateCountdown(){
-  const now = new Date(
-    new Date().toLocaleString("en-US",{timeZone:"Asia/Taipei"})
-  );
-  const target = new Date("2026-01-01T00:00:00+08:00");
-  let diff = target - now;
-  if(diff < 0) diff = 0;
+  const now=new Date(new Date().toLocaleString("en-US",{timeZone:"Asia/Taipei"}));
+  const target=new Date("2026-01-01T00:00:00+08:00");
+  let diff=target-now;
+  if(diff<0) diff=0;
 
-  const d = Math.floor(diff / 86400000);
-  const h = Math.floor(diff % 86400000 / 3600000);
-  const m = Math.floor(diff % 3600000 / 60000);
-  const s = Math.floor(diff % 60000 / 1000);
+  const d=Math.floor(diff/86400000);
+  const h=Math.floor(diff%86400000/3600000);
+  const m=Math.floor(diff%3600000/60000);
+  const s=Math.floor(diff%60000/1000);
 
-  cd.textContent = `${d} 天 ${h} 小時 ${m} 分 ${s} 秒`;
+  cd.textContent=`${d} 天 ${h} 小時 ${m} 分 ${s} 秒`;
 }
 setInterval(updateCountdown,1000);
 updateCountdown();
 
-/* ===== Canvas 粒子 ===== */
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
+/* ===== 粒子系統（一開始就存在） ===== */
+const canvas=document.getElementById("canvas");
+const ctx=canvas.getContext("2d");
 
-let particles = [];
-let targetCount = 180;
-let speed = 1;
+let particles=[];
+let targetCount=220;
+let speed=1;
 
 function resize(){
-  const dpr = window.devicePixelRatio || 1;
-  canvas.width = innerWidth * dpr;
-  canvas.height = innerHeight * dpr;
+  const dpr=window.devicePixelRatio||1;
+  canvas.width=innerWidth*dpr;
+  canvas.height=innerHeight*dpr;
   ctx.setTransform(dpr,0,0,dpr,0,0);
 }
-window.addEventListener("resize", resize);
+window.addEventListener("resize",resize);
 resize();
 
-/* ⭐ 關鍵：初始化就在畫面內 */
 function createParticle(){
   return{
-    x: Math.random() * innerWidth,
-    y: Math.random() * innerHeight, // ← 這一行是重點
-    r: Math.random() * 2 + 1,
-    v: Math.random() * 0.6 + 0.4
+    x:Math.random()*innerWidth,
+    y:Math.random()*innerHeight, // ⭐ 一開始就在畫面內
+    r:Math.random()*2.2+1,
+    v:Math.random()*0.6+0.4
   };
 }
 
 function syncParticles(){
-  while(particles.length < targetCount) particles.push(createParticle());
-  while(particles.length > targetCount) particles.pop();
+  while(particles.length<targetCount) particles.push(createParticle());
+  while(particles.length>targetCount) particles.pop();
 }
 syncParticles();
 
-/* 動畫主循環：一進頁面就跑 */
 function animate(){
   ctx.clearRect(0,0,innerWidth,innerHeight);
-
-  const color = getComputedStyle(document.documentElement)
-    .getPropertyValue("--glow-color");
-  ctx.fillStyle = color;
-  ctx.shadowColor = color;
-  ctx.shadowBlur = 18;
+  const color=getComputedStyle(document.documentElement).getPropertyValue("--glow-color");
+  ctx.fillStyle=color;
+  ctx.shadowColor=color;
+  ctx.shadowBlur=20;
 
   for(const p of particles){
-    p.y -= p.v * speed;
-    if(p.y < -10){
-      p.y = innerHeight + 10;
-      p.x = Math.random() * innerWidth;
+    p.y-=p.v*speed;
+    if(p.y<-10){
+      p.y=innerHeight+10;
+      p.x=Math.random()*innerWidth;
     }
     ctx.beginPath();
     ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
     ctx.fill();
   }
-
   requestAnimationFrame(animate);
 }
 animate();
 
-/* ===== 控制（即時，不重跑） ===== */
-bgColor.oninput = e=>{
-  document.documentElement.style.setProperty("--bg-color", e.target.value);
+/* ===== 控制（即時生效，不重跑） ===== */
+bgColor.oninput=e=>{
+  document.documentElement.style.setProperty("--bg-color",e.target.value);
 };
-pColor.oninput = e=>{
-  document.documentElement.style.setProperty("--glow-color", e.target.value);
+pColor.oninput=e=>{
+  document.documentElement.style.setProperty("--glow-color",e.target.value);
 };
-pCount.oninput = e=>{
-  targetCount = +e.target.value;
+pCount.oninput=e=>{
+  targetCount=+e.target.value;
   syncParticles();
 };
-pSpeed.oninput = e=>{
-  speed = +e.target.value;
+pSpeed.oninput=e=>{
+  speed=+e.target.value;
 };
 
-/* ===== 光暈（滑鼠＋觸控） ===== */
-const glow = document.getElementById("glow");
+/* ===== 光暈（滑鼠 + 觸控） ===== */
+const glow=document.getElementById("glow");
 function move(e){
-  const x = e.touches ? e.touches[0].clientX : e.clientX;
-  const y = e.touches ? e.touches[0].clientY : e.clientY;
-  glow.style.left = x + "px";
-  glow.style.top = y + "px";
+  const p=e.touches?e.touches[0]:e;
+  glow.style.left=p.clientX+"px";
+  glow.style.top=p.clientY+"px";
 }
-window.addEventListener("mousemove", move);
-window.addEventListener("touchmove", move, {passive:true});
+window.addEventListener("mousemove",move);
+window.addEventListener("touchmove",move,{passive:true});
 </script>
 
 </body>
